@@ -11,33 +11,45 @@ public class Camera {
 	public static final float ROTATION_SENSITIVITY = 1.0F;
 	public static final float ZOOM_SENSITIVITY = 0.05F;
 	public static final float ZOOM_SCALAR = 0.0F;
-	
+
 	private Vector3f rotationPoint = new Vector3f(0,0,0);
 	private Vector3f position = new Vector3f();
-	private Quaternion quat = new Quaternion();
-	
+
+	private Vector3f rotation = new Vector3f();
+
 	private float distance = 10.0f;
-	
+
 	public Camera(){
 		position = new Vector3f(0.0F, 5.0F, 10.0f);
 	}
-	
+
 	public void moveCamera(float rotationX, float rotationY, float zoom){
-		//Quaternion newRot = new Quaternion(new Vector3f((float)Math.toRadians(rotationY), (float)Math.toRadians(rotationX), 0.0f));
+
+		float maxAngle = (float) (Math.PI * 2);
 		
+		float rotX = modules(rotation.getX() + (float) Math.toRadians(-rotationY), maxAngle);
+		float rotY = modules(rotation.getY() + (float) Math.toRadians(-rotationX), maxAngle);
+		
+		rotation.set(rotX, rotY, 0.0f);
+
 		distance = MathHelper.clampf(distance + zoom * ZOOM_SENSITIVITY, 1.0F, 1000.0F);
-		
-		Quaternion rotX = new Quaternion((float) Math.toRadians(rotationY), GlobalAxis.X.toVector());
-		Quaternion rotY = new Quaternion((float) Math.toRadians(rotationX), GlobalAxis.Y.toVector());
-		
-		quat = rotY.mult(quat);
-		quat = rotX.mult(quat);
-		
+
+		Quaternion quat = Quaternion.fromRadianVector(rotation);
 		Quaternion inversed = quat.copy().inverse();
 		position = inversed.mult(GlobalAxis.Z.toVector(distance));
 	}
-	
+
+	private float modules(float f, float max){
+		if(f > max){
+			return f - max;
+		}
+		else if(f < 0.0f){
+			return f + max;
+		}
+		return f;
+	}
+
 	public Matrix4f createViewMatrix(){
-		return MathHelper.createViewMatrix(position, quat);
+		return MathHelper.createViewMatrix(position, Quaternion.fromRadianVector(rotation));
 	}
 }
